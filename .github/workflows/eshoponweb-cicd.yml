@@ -22,13 +22,17 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-        
+
+    # 1. SETUP GLOBAL.JSON (Corrigé avec --force)
+    # L'option --force écrase le fichier existant pour garantir qu'on reste sur .NET 8
+    - name: Enforce .NET 8 SDK
+      run: dotnet new globaljson --sdk-version 8.0.100 --roll-forward latestFeature --force
+
     # 2. CORRECTION UNIVERSELLE DES DÉPENDANCES
-    # On applique le fix à "*.csproj" (tout le monde) et on ajoute les libs conflictuelles
+    # On force le downgrade des paquets en version 8.0.0 sur TOUS les projets (*.csproj)
     - name: Fix Dependency Conflict (Force v8.0.0 globally)
       run: |
         echo "Downgrading packages for ALL projects..."
-        # On force la version 8.0.0 pour les coupables identifiés dans les logs
         find . -name "*.csproj" -exec dotnet add {} package System.Diagnostics.DiagnosticSource --version 8.0.0 \;
         find . -name "*.csproj" -exec dotnet add {} package Microsoft.Extensions.Caching.Memory --version 8.0.0 \;
         find . -name "*.csproj" -exec dotnet add {} package Microsoft.Extensions.Configuration.Abstractions --version 8.0.0 \;
@@ -57,7 +61,6 @@ jobs:
       with:
         name: bicep-template
         path: ${{ env.TEMPLATE-FILE }}
-        
   # Use Bicep to deploy infrastructure + Publish webapp 
   deploy:
     runs-on: ubuntu-latest
