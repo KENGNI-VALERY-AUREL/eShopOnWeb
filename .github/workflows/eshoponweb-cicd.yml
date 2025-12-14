@@ -22,11 +22,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-
-    # 1. Empêcher l'utilisation du SDK 9/10
-    - name: Enforce .NET 8 SDK
-      run: dotnet new globaljson --sdk-version 8.0.100 --roll-forward latestFeature
-
+        
     # 2. CORRECTION UNIVERSELLE DES DÉPENDANCES
     # On applique le fix à "*.csproj" (tout le monde) et on ajoute les libs conflictuelles
     - name: Fix Dependency Conflict (Force v8.0.0 globally)
