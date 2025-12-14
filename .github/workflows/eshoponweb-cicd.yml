@@ -19,26 +19,40 @@ jobs:
     steps:
     #checkout the repository
     - uses: actions/checkout@v4
-    #prepare runner for desired .net version SDK
+
+    # 1. SETUP .NET (Standard)
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-        # dotnet-quality: 'preview'
+
+    # 2. CRÉATION DU GLOBAL.JSON (Nouvelle étape critique)
+    # Cela force l'utilisation exclusive du SDK 8, empêchant le téléchargement de paquets .NET 9
+    - name: Enforce .NET 8 SDK
+      run: |
+        dotnet new globaljson --sdk-version 8.0.100 --roll-forward latestFeature
+
+    # 3. CORRECTION DES DÉPENDANCES (Ciblage du vrai coupable)
+    # On force Microsoft.AspNetCore.Mvc.Testing à rester en v8.0.0
+    # On force aussi Abstractions par sécurité
     - name: Fix Dependency Conflict (Force v8.0.0)
       run: |
+        find . -name "*Tests.csproj" -exec dotnet add {} package Microsoft.AspNetCore.Mvc.Testing --version 8.0.0 \;
         find . -name "*Tests.csproj" -exec dotnet add {} package Microsoft.Extensions.Configuration.Abstractions --version 8.0.0 \;
-    # ------------------------------
+
     #Build/Test/Publish the .net project
     - name: Build with dotnet
       run: dotnet build ./eShopOnWeb.sln --configuration Release
+
     - name: Test with dotnet
       run: dotnet test ./eShopOnWeb.sln --configuration Release
+
     - name: dotnet publish
       run: |
         dotnet publish ./src/Web/Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
         cd ${{env.DOTNET_ROOT}}/myapp
         zip -r ../app.zip .
+
     # upload the published website code artifacts
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v4
